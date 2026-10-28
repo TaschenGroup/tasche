@@ -1,6 +1,8 @@
 use std::{cell::RefCell, error::Error, fmt, rc::Rc};
 
-use gpui_kit::{App, Application, Entity, QuitMode, Render, Window, WindowOptions};
+use gpui_kit::{
+    AnyWindowHandle, App, Application, Entity, QuitMode, Render, Window, WindowOptions,
+};
 
 /// Identifies the stage at which application startup failed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -69,9 +71,7 @@ where
     create_application()?
         .with_quit_mode(QuitMode::LastWindowClosed)
         .run(move |cx| {
-            gpui_kit::init(cx);
-
-            let result = gpui_kit::open_window(options, cx, build).map(|_| ());
+            let result = open_initial_window(cx, options, build).map(|_| ());
             finish_window_startup(result, &startup_error, || cx.quit());
         });
 
@@ -79,6 +79,19 @@ where
         Some(err) => Err(err),
         None => Ok(()),
     }
+}
+
+fn open_initial_window<V, F>(
+    cx: &mut App,
+    options: WindowOptions,
+    build: F,
+) -> gpui_kit::Result<(AnyWindowHandle, Entity<V>)>
+where
+    V: Render + 'static,
+    F: FnOnce(&mut Window, &mut App) -> Entity<V>,
+{
+    gpui_kit::init(cx);
+    gpui_kit::open_window(options, cx, build)
 }
 
 #[cfg(all(target_os = "windows", target_arch = "x86_64"))]
@@ -125,9 +138,58 @@ mod tests {
     use std::{
         cell::{Cell, RefCell},
         error::Error,
+        rc::Rc,
     };
 
-    use super::{RunErrorKind, finish_window_startup, platform_startup_result};
+    use gpui_kit::test::TestWindowExt;
+    use gpui_kit::{
+        AppContext, Context, IntoElement, ParentElement, Render, Role, TestAppContext,
+        TestSupportExt, Window, WindowOptions, base::Root, div, prelude::*,
+    };
+
+    use super::{
+        RunErrorKind, finish_window_startup, open_initial_window, platform_startup_result,
+    };
+
+    struct MarkerView;
+
+    impl Render for MarkerView {
+        fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+            div()
+                .id("startup-marker")
+                .role(Role::Status)
+                .test_support()
+                .aria_label("startup marker")
+                .child("startup marker")
+        }
+    }
+
+    #[gpui_kit::test]
+    fn initial_window_hosts_the_application_view_in_kit_root(cx: &mut TestAppContext) {
+        let build_count = Rc::new(Cell::new(0));
+        let count = Rc::clone(&build_count);
+        let (window, view) = cx.update(|cx| {
+            open_initial_window(cx, WindowOptions::default(), |_, cx| {
+                count.set(count.get() + 1);
+                cx.new(|_| MarkerView)
+            })
+            .expect("initial window should open")
+        });
+
+        assert_eq!(build_count.get(), 1);
+        assert!(window.downcast::<Root>().is_some());
+        cx.update(|cx| {
+            let _: &MarkerView = view.read(cx);
+        });
+        cx.update_window(window, |_, window, cx| {
+            window.render_frame(cx);
+            assert_eq!(
+                window.find("startup-marker").label(),
+                Some("startup marker")
+            );
+        })
+        .expect("window should render");
+    }
 
     #[test]
     fn platform_failure_returns_its_stage_and_error_chain() {

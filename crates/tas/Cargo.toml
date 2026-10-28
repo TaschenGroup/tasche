@@ -9,5 +9,8 @@ publish = false
 [dependencies]
 gpui-kit.workspace = true
 
+[dev-dependencies]
+gpui-kit = { workspace = true, features = ["test-support"] }
+
 [target.'cfg(all(target_os = "windows", target_arch = "x86_64"))'.dependencies]
 gpui_windows = { package = "gpui-pre-windows", version = "=0.3.10", default-features = false }

@@ -83,12 +83,17 @@ where
 
 #[cfg(all(target_os = "windows", target_arch = "x86_64"))]
 fn create_application() -> Result<Application, RunError> {
-    let platform = gpui_windows::WindowsPlatform::new(false).map_err(|err| RunError {
+    let platform = platform_startup_result(gpui_windows::WindowsPlatform::new(false))?;
+    Ok(Application::with_platform(Rc::new(platform)))
+}
+
+#[cfg(any(all(target_os = "windows", target_arch = "x86_64"), test))]
+fn platform_startup_result<T>(result: gpui_kit::Result<T>) -> Result<T, RunError> {
+    result.map_err(|err| RunError {
         kind: RunErrorKind::PlatformInitialization,
         message: format!("{err:#}"),
         source: Some(err.into_boxed_dyn_error()),
-    })?;
-    Ok(Application::with_platform(Rc::new(platform)))
+    })
 }
 
 #[cfg(not(all(target_os = "windows", target_arch = "x86_64")))]
@@ -122,7 +127,22 @@ mod tests {
         error::Error,
     };
 
-    use super::{RunErrorKind, finish_window_startup};
+    use super::{RunErrorKind, finish_window_startup, platform_startup_result};
+
+    #[test]
+    fn platform_failure_returns_its_stage_and_error_chain() {
+        let failure: gpui_kit::Result<()> =
+            Err(std::io::Error::other("injected platform failure").into());
+        let error =
+            platform_startup_result(failure.map_err(|error| error.context("platform backend")))
+                .expect_err("platform failure must be reported");
+
+        assert_eq!(error.kind(), RunErrorKind::PlatformInitialization);
+        assert!(error.to_string().contains("platform backend"));
+        assert!(error.to_string().contains("injected platform failure"));
+        let source = error.source().expect("source error must be retained");
+        assert!(source.source().is_some());
+    }
 
     #[test]
     fn window_failure_returns_error_and_requests_quit() {

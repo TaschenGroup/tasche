@@ -1,0 +1,13 @@
+[workspace]
+members = ["crates/tas", "apps/tas-showcase"]
+resolver = "3"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+rust-version = "1.99"
+
+[workspace.dependencies]
+gpui-kit = { version = "=0.8.1", default-features = false, features = ["component"] }
+tas = { path = "crates/tas" }

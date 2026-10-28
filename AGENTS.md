@@ -1,0 +1,28 @@
+# Tasche development rules
+
+- PUB-01: Keep this repository independently buildable without private workspaces.
+- PUB-02: Support Windows 11 x64 and use the GPUI version provided by GPUI Kit.
+- PUB-03: Keep application logic independent of GPUI and Windows types.
+- PUB-04: Document public APIs, including errors, ownership and lifecycle requirements.
+- PUB-05: Inspect existing dependencies and evaluate maintained libraries before adding a new implementation.
+- PUB-06: Check dependency versions, licenses, target support and maintenance before adoption.
+- PUB-07: Keep credentials, user data, private conversations and generated artifacts out of Git.
+- PUB-08: Preserve the MIT license and comply with dependency licenses.
+- PUB-09: Test observable behavior at the lowest level that covers the risk.
+- PUB-10: Use private test resources and never modify a user's live application data.
+- PUB-11: Run GUI or system integration tests only in a verified private environment.
+- PUB-12: Check final changes and report checks that could not run.
+- PUB-13: Add comments for reasons and constraints that code cannot express.
+- PUB-14: Do not add a README until requested.
+- PUB-15: Record dependency choices and verify executor, thread, security and failure behavior when relevant.
+- PUB-16: Keep retained UI state, subscriptions and tasks owned for their required lifetime.
+- PUB-17: Keep disk, network and expensive computation off the UI thread.
+- PUB-18: Report failed or unexecuted verification; never claim native GUI behavior from headless tests.
+- PUB-19: Test failure paths and user-visible outcomes, not only implementation calls.
+- PUB-20: Limit test resources and ensure keyboard, mouse, screenshots and processes stay in the private test environment.
+- PUB-21: Keep runtime data and build outputs isolated between development, tests and released applications.
+- PUB-22: Pin workspace dependencies and the Rust toolchain; commit the application lockfile.
+- PUB-23: Keep private keys and signing credentials out of source, build outputs and logs.
+- PUB-24: Document incompatible changes and migration steps when releasing a version.
+- PUB-25: Review repository history and release artifacts for private information before publication.
+- PUB-26: Update this file when a development rule changes; do not rely on private documents.
